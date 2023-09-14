@@ -1,6 +1,5 @@
-open←"libbqnsqlite.so" •FFI ""‿"bqnsqlite_open"
-sel←"libbqnsqlite.so" •FFI "a"‿"bqnsqlite_select"‿"a"
-printcol←"libbqnsqlite.so" •FFI "a"‿"read_x"
-Open⟨⟩
-# •Show 1+PrintCol⟨⟩
-•Show Sel ⟨"select x+100 from test"⟩
+sqlite ← •Import "bqnsqlite.bqn"
+! sqlite.Open "test.db" # should return true
+•Show x ← sqlite.Select "select x from test" # test selection works
+•Show y ← sqlite.Select "select y from test LIMIT 10" # test sql query is being read
+! ¬ sqlite.Open "fake.db"

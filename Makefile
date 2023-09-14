@@ -8,7 +8,11 @@ LIBS=-lcbqn -lsqlite3
 all: libbqnsqlite.so
 
 run: libbqnsqlite.so
-	bqn ffitest.bqn
+	LD_LIBRARY_PATH=. bqn ffitest.bqn
+
+.PHONY: repl
+repl: libbqnsqlite.so
+	LD_LIBRARY_PATH=. bqn
 
 libbqnsqlite.so: bqnsqlite.o
 	$(CC) -shared -L. $(LIBS) -olibbqnsqlite.so bqnsqlite.o
@@ -21,7 +25,3 @@ clean:
 	rm bqnsqlite.o
 	rm libbqnsqlite.so
 
-.PHONY: test2
-test2:
-	gcc -lsqlite3 -o test2 test2.c
-	./test2
