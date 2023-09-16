@@ -177,3 +177,13 @@ BQNV bqnsqlite_select(DB_HANDLE db_handle, BQNV query)
     buf[query_len] = '\0'; // null terminate the query
     return do_query(db, buf);
 }
+
+void bqnsqlite_close(DB_HANDLE db_handle)
+{
+    sqlite3* db = lookup_handle(db_handle);
+    if (NULL == db)
+    {
+	fprintf(stderr, "Could not lookup handle: %ld\n", db_handle);
+    }
+    sqlite3_close_v2(db);
+}
