@@ -42,6 +42,54 @@ sqlite3* lookup_handle(DB_HANDLE db_handle)
     }	
 }
 
+// quick and dirty dynamic array (only int64 for now)
+struct vector_i32
+{
+    size_t   cap;  // max size that can be held
+    size_t   size; // current size
+    int32_t* data; // pointer to the data
+};
+
+struct vector_i32 vector_i32_new()
+{
+    static const size_t default_cap = 16;
+    
+    int64_t* data = malloc(sizeof(int32_t) * default_cap);
+    if (NULL == data)
+    {
+	fprintf(stderr, "error allocating initial vector\n");
+    }
+    
+    return (struct vector_i32) {	
+	.cap = default_cap,
+	.size = 0,
+	.data = data
+    };
+}
+
+void vector_i32_add(struct vector_i32* vec, int32_t item)
+{
+    // guranteed off by 1 errors here
+    if ((vec->size + 1) >= vec->cap)
+    {
+	// reallocate
+	const size_t new_cap = sizeof(int32_t) * vec->cap * 2;
+	int32_t* new = realloc(vec->data, new_cap);
+	if (NULL != new)
+	{
+	    vec->data = new;
+	    vec->cap = vec->cap * 2;
+	}
+    }
+    vec->data[vec->size] = item;
+    vec->size++;
+}
+
+void vector_i32_free(struct vector_i32* vec)
+{
+    free(vec->data);
+}
+
 // TODO does this leak if we pass an argument and don't use it?
 DB_HANDLE bqnsqlite_open(BQNV path)
 {    
@@ -94,20 +142,19 @@ BQNV do_query(sqlite3* db, char* query)
 	return 0;
     }
 
-    int x[1024];
+    struct vector_i32 col = vector_i32_new();
     int column_count = sqlite3_column_count(stmt);
-
-    int i = 0;
+    
     while (SQLITE_DONE != sqlite3_step(stmt))
     {	
-	x[i] = sqlite3_column_int(stmt, 0);
-	++i;
+	vector_i32_add(&col, sqlite3_column_int(stmt, 0));
     }
 
     sqlite3_finalize(stmt);
 
-    // we've copied up to 1024 values into x
-    return bqn_makeI32Vec(i, &x);
+    BQNV ret = bqn_makeI32Vec(col.size, col.data);
+    vector_i32_free(&col);
+    return ret;
 }
 
 BQNV bqnsqlite_select(DB_HANDLE db_handle, BQNV query)
